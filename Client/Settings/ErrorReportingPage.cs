@@ -133,7 +133,7 @@ namespace Web.Management.PHP.Settings
                 settingValues = _settingsProdValues;
             }
 
-            var php7 = new Version(Module.Proxy.GetPHPConfigInfo().Version) >= new Version("7.2");
+            var php7 = IsPhp72OrNewer(Module.Proxy.GetPHPConfigInfo().Version);
             var settings = new RemoteObjectCollection<PHPIniSetting>();
             for (int i = 0; i < settingValues.Length; i++)
             {
@@ -494,7 +494,7 @@ namespace Web.Management.PHP.Settings
                 }
 
                 int i = 1;
-                var php7 = new Version(Module.Proxy.GetPHPConfigInfo().Version) >= new Version("7.2");
+                var php7 = IsPhp72OrNewer(Module.Proxy.GetPHPConfigInfo().Version);
                 while (_errorReportingPreset != ErrorReportingPreset.Undefined && i < _settingNames.Length)
                 {
                     if (php7 && _settingNames[i] == "track_errors")
@@ -529,6 +529,12 @@ namespace Web.Management.PHP.Settings
                 _errorLogFile = setting.GetTrimmedValue();
                 _errorLogFileTextBox.Text = setting.GetTrimmedValue();
             }
+        }
+
+        private static bool IsPhp72OrNewer(string version)
+        {
+            var parsed = PHPConfigInfo.ParseVersion(version);
+            return parsed != null && parsed >= new Version("7.2");
         }
 
         private class PageTaskList : TaskList

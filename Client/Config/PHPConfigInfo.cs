@@ -8,6 +8,7 @@
 //----------------------------------------------------------------------- 
 
 using System;
+using System.Text.RegularExpressions;
 
 namespace Web.Management.PHP.Config
 {
@@ -203,6 +204,24 @@ namespace Web.Management.PHP.Config
             {
                 _data[IndexVersion] = value;
             }
+        }
+
+        // File version resources may append a suffix, for example "7.4.33-pl2".
+        // System.Version accepts only the numeric components.
+        internal static Version ParseVersion(string version)
+        {
+            if (String.IsNullOrEmpty(version))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(version, @"^(?<version>\d+\.\d+\.\d+(?:\.\d+)?).*");
+            if (!match.Success)
+            {
+                return null;
+            }
+
+            return new Version(match.Groups["version"].Value);
         }
 
         #region IRemoteObject Members

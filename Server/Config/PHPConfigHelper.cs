@@ -13,7 +13,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text.RegularExpressions;
 using Microsoft.Win32;
 using Web.Management.PHP.DefaultDocument;
 using Web.Management.PHP.FastCgi;
@@ -365,17 +364,7 @@ namespace Web.Management.PHP.Config
 
         private static Version ExtractVersion(string versionAsIs)
         {
-            Version result = null;
-
-            var r = new Regex(@"^(?<version>\d+\.\d+\.\d+(?:\.\d+)?).*");
-            var m = r.Match(versionAsIs);
-            if (m.Success)
-            {
-                var version = r.Match(versionAsIs).Result("${version}");
-                result = new Version(version);
-            }
-
-            return result;
+            return PHPConfigInfo.ParseVersion(versionAsIs);
         }
 
         private static string GenerateHandlerName(HandlersCollection collection, string phpVersion)
@@ -945,20 +934,22 @@ namespace Web.Management.PHP.Config
                     new PHPIniExtension("php_soap.dll", true),
                 };
 
-            if (new Version(version) < new Version("7.0"))
+            var parsedVersion = ExtractVersion(version);
+
+            if (parsedVersion != null && parsedVersion < new Version("7.0"))
             {
                 // IMPORTANT: keep obsolete setting in old release.
                 extensions.Add(new PHPIniExtension("php_mysql.dll", true));
             }
 
-            if (new Version(version) < new Version("8.0"))
+            if (parsedVersion != null && parsedVersion < new Version("8.0"))
             {
                 // IMPORTANT: keep obsolete setting in old release.
                 extensions.Add(new PHPIniExtension("php_xmlrpc.dll", true));
                 extensions.Add(new PHPIniExtension("php_gd2.dll", true));
             }
 
-            if (new Version(version) >= new Version("8.0"))
+            if (parsedVersion != null && parsedVersion >= new Version("8.0"))
             {
                 extensions.Add(new PHPIniExtension("php_gd.dll", true));
             }
@@ -1769,7 +1760,13 @@ namespace Web.Management.PHP.Config
                 { "8.5", new PhpVersion("8.5", new DateTime(2029, 12, 31), new Version(14, 30)) },
             };
 
-            var detected = new Version(info.Version);
+            var detected = ExtractVersion(info.Version);
+            if (detected == null)
+            {
+                info.IsObsoleteRelease = true;
+                return;
+            }
+
             var key = string.Format("{0}.{1}", detected.Major, detected.Minor);
             var matched = knownPhpVersions.ContainsKey(key) ? knownPhpVersions[key] : null;
             if (matched == null)
